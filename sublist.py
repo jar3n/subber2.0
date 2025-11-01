@@ -81,7 +81,7 @@ class SubscriptionList:
         if not self.is_subbed(handle):
             try:
                 new_sub = Sub(self._api_key, handle)
-                self.update_sub_json(sub)
+                self.update_sub_json(new_sub)
                 print(f"Subscribed to {new_sub.get_name()}")
             except SubException as e:
                 if e.code == 3:
@@ -118,7 +118,7 @@ class SubscriptionList:
         
         # debug print string
         # print(f"Checking sub: {sub_json_key}")
-
+    
 
         sub = None
         errored = False
@@ -128,6 +128,10 @@ class SubscriptionList:
         except:
             # raise flag to add the sub to the error queue
             errored = True
+        
+        # print(f"Checking sub statuses for {sub.get_name()}:")
+        # print(f"has watched: {sub.have_watched()}")
+        # print(f"not interested: {sub.is_not_interested()}")
         
         if errored:
             # add the sub to the error queue
@@ -140,12 +144,14 @@ class SubscriptionList:
             # put the sub in the new video queue if
             # a new video was uploaded since last check
             queue.put([sub, self.UPDATED])
-        elif sub.have_watched() and sub.is_not_interested():
+        elif sub.have_watched() or sub.is_not_interested():
             # here because the number of processes
             # equals number of subs 
             # so ignore all subs in this category
+            # print(f"Marking {sub.get_name()} as ignored")
             queue.put([sub, self.IGNORE])
         else:
+            # print(f"Marking sub as normal {sub.get_name()}")
             queue.put([sub, self.NORMAL])
             
     def update_sub_json(self, sub):
@@ -224,7 +230,7 @@ class SubscriptionList:
             if len(today_uploads) > 0: 
                 today_uploads.sort(key= lambda sub: sub.get_latest_upload_time(), reverse=True)
                 print("----------------------------")
-                print("Uploads that happened today:")
+                print(f"Uploads that happened today ({len(today_uploads)}):")
                 print("----------------------------\n")
                 for up in today_uploads:
                     print(f" {up}\n")
@@ -232,7 +238,7 @@ class SubscriptionList:
             if len(this_week_uploads) > 0: 
                 this_week_uploads.sort(key= lambda sub: sub.get_latest_upload_time(), reverse=True) 
                 print("\n----------------------------")
-                print("Uploads that happened this week:")
+                print(f"Uploads that happened this week ({len(this_week_uploads)}):")
                 print("----------------------------\n")
                 for up in this_week_uploads:
                     print(f" {up}\n")
@@ -240,7 +246,7 @@ class SubscriptionList:
             if len(long_ago_uploads) > 0: 
                 long_ago_uploads.sort(key= lambda sub: sub.get_latest_upload_time(), reverse=True)
                 print("\n----------------------------")
-                print("Uploads that happened a while ago:")
+                print(f"Uploads that happened a while ago ({len(long_ago_uploads)}):")
                 print("----------------------------\n")
                 for up in long_ago_uploads:
                     print(f" {up}\n")
