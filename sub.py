@@ -183,7 +183,7 @@ class Sub:
             duration_str = self._latest_upload_duration
         else:
             duration_str = isodate.parse_duration(self._latest_upload_duration)
-        return f"{self._name}'s ({self._handle}) latest video:\n  title: {self._latest_upload}\n  url: {self._latest_video_url}\n duration: {duration_str}"
+        return f"{self._name}'s ({self._handle}) latest video:\n  title: {self._latest_upload}\n  url: {self._latest_video_url}\n  duration: {duration_str}"
     
     def get_name(self):
         return self._name
