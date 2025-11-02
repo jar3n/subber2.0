@@ -1,6 +1,7 @@
 
 import requests, socket
 from datetime import datetime
+import isodate
 
 ############################################
 # Function for testing internet connection #
@@ -32,7 +33,6 @@ class SubException(Exception):
             return f"{self.args[0]} (Error Code: {self.code})"
         return self.args[0]
 
-
 ############################
 # Class for a Subscription #
 ############################
@@ -43,6 +43,7 @@ class Sub:
         self._api_base_url = "https://www.googleapis.com/youtube/v3"
         self._updated = False
         self._latest_upload_time = None
+        self._latest_upload_duration = 0
 
         # first things first: check if we are connected to the internet
         if not is_connected():
@@ -82,6 +83,11 @@ class Sub:
                     self._not_interested = bool(args[1]['not_interested'])
                 else:
                     self._not_interested = False
+                
+                if 'duration' in args[1]:
+                    self._latest_upload_duration = args[1]['duration']
+                else:
+                    self._latest_upload_duration = 'Unknown'
 
                 # do check in here to see if 
                 # we need to update 
@@ -163,6 +169,7 @@ class Sub:
             'latest upload' : self._latest_upload,
             'latest upload time' : self._latest_upload_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             'latest video url' : self._latest_video_url,
+            'duration' : self._latest_upload_duration,
             'update rate': self._update_freq,
             'watched latest': self._watched_latest,
             'not_interested':self._not_interested
@@ -172,14 +179,19 @@ class Sub:
         return self._latest_upload_time
     
     def __str__(self):
-        return f"{self._name}'s ({self._handle}) latest video:\n  title: {self._latest_upload}\n  url: {self._latest_video_url}"
+        if self._latest_upload_duration == 'Unknown':
+            duration_str = self._latest_upload_duration
+        else:
+            duration_str = isodate.parse_duration(self._latest_upload_duration)
+        return f"{self._name}'s ({self._handle}) latest video:\n  title: {self._latest_upload}\n  url: {self._latest_video_url}\n duration: {duration_str}"
     
     def get_name(self):
         return self._name
     
     def update_time_of_latest_upload(self):
         playlist_url = f'{self._api_base_url}/playlistItems?part=snippet&playlistId={self._uploads_id}&maxResults=1&key={self._api_key}'
-        
+        latest_vid_id = None
+        # getting the latest upload from the channel
         try:
             playlist_response = requests.get(playlist_url).json()
             
@@ -194,7 +206,9 @@ class Sub:
             if self._latest_upload_time is None or latest_upload_time != self._latest_upload_time:
                 self._latest_upload = latest_video['title']
                 self._latest_upload_time = latest_upload_time
-                self._latest_video_url = f'https://www.youtube.com/watch?v={latest_video['resourceId']['videoId']}'
+                latest_vid_id = latest_video['resourceId']['videoId']
+                self._latest_video_url = f'https://www.youtube.com/watch?v={latest_vid_id}'
+
 
                 # also set this to false because if a new video is out the user hasn't watched it
                 self._watched_latest = False
@@ -211,8 +225,21 @@ class Sub:
         except requests.RequestException as e:
             raise SubException(e.strerror, e.errno)
         
+        # getting the duration of the video
+        if latest_vid_id is not None:
+            duration_url = f'{self._api_base_url}/videos?part=contentDetails&id={latest_vid_id}&maxResults=1&key={self._api_key}'
+            try: 
+                duration_response = requests.get(duration_url).json()
+                self._latest_upload_duration = duration_response['items'][0]['contentDetails']['duration']
+
+            except requests.urllib3.exceptions.MaxRetryError as e:
+                raise SubException(e.strerror, e.errno)
         
-        
+            except requests.ConnectionError as e:
+                raise SubException(e.strerror, e.errno)
+
+            except requests.RequestException as e:
+                raise SubException(e.strerror, e.errno)      
         
     
     def new_video(self):
@@ -231,4 +258,4 @@ class Sub:
         self._not_interested = True
     
     def is_not_interested(self):
-        return self._not_interested;
+        return self._not_interested
