@@ -4,7 +4,8 @@
 import sys, os, argparse, configparser
 from pathlib import Path
 from inspect import getsourcefile
-import pyvidplayer2
+import webbrowser
+
 
 # custom modules
 from sublist import SubscriptionList
@@ -71,7 +72,7 @@ def main():
                         help="set a channel's latest video to not interested in watching.", 
                         metavar='<channel handle>')
     
-    parser.add_argument("-p"
+    parser.add_argument("-p",
                         "--play",
                         type=str,
                         nargs=1,
@@ -129,8 +130,14 @@ def main():
             subs.set_sub_not_interested(handle)
     
     if args.play:
-        
-
+        #  Desire is to have a way to vide youtube
+        # videos without going to youtube website
+        # but youtube does not want that so
+        # i guess instead this command simply 
+        # opens the youtube video url
+        # which is still a nice convenience
+        sub_latest = subs.get_sub(args.play[0]).latest_video_link()
+        webbrowser.open(sub_latest)
 
 if __name__ == "__main__":
     main()
