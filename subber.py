@@ -4,6 +4,7 @@
 import sys, os, argparse, configparser
 from pathlib import Path
 from inspect import getsourcefile
+import pyvidplayer2
 
 # custom modules
 from sublist import SubscriptionList
@@ -69,6 +70,13 @@ def main():
                         nargs='*', 
                         help="set a channel's latest video to not interested in watching.", 
                         metavar='<channel handle>')
+    
+    parser.add_argument("-p"
+                        "--play",
+                        type=str,
+                        nargs=1,
+                        help="play the latest video from the given channel",
+                        metavar="<channel handle>")
 
     args = parser.parse_args()
 
@@ -119,6 +127,10 @@ def main():
     if isinstance(args.not_interested, list):
         for handle in args.not_interested:
             subs.set_sub_not_interested(handle)
+    
+    if args.play:
+        
+
 
 if __name__ == "__main__":
     main()

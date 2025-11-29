@@ -310,3 +310,6 @@ class SubscriptionList:
 
         self.store_list()
         print(f"You watched all the latest videos!!")
+
+    def get_sub(self, handle):
+        return Sub(self._api_key, handle, self._subs_json["subscriptions"][handle])

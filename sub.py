@@ -240,7 +240,6 @@ class Sub:
 
             except requests.RequestException as e:
                 raise SubException(e.strerror, e.errno)      
-        
     
     def new_video(self):
         return self._updated
@@ -259,3 +258,7 @@ class Sub:
     
     def is_not_interested(self):
         return self._not_interested
+    
+    def latest_video_link(self):
+        return self._latest_video_url
+    
