@@ -4,6 +4,8 @@
 import sys, os, argparse, configparser
 from pathlib import Path
 from inspect import getsourcefile
+import webbrowser
+
 
 # custom modules
 from sublist import SubscriptionList
@@ -69,6 +71,13 @@ def main():
                         nargs='*', 
                         help="set a channel's latest video to not interested in watching.", 
                         metavar='<channel handle>')
+    
+    parser.add_argument("-p",
+                        "--play",
+                        type=str,
+                        nargs=1,
+                        help="play the latest video from the given channel",
+                        metavar="<channel handle>")
 
     args = parser.parse_args()
 
@@ -119,6 +128,16 @@ def main():
     if isinstance(args.not_interested, list):
         for handle in args.not_interested:
             subs.set_sub_not_interested(handle)
+    
+    if args.play:
+        # Desire is to have a way to provide youtube
+        # videos without going to youtube website
+        # but youtube does not want that
+        # instead this command simply 
+        # opens the youtube video url
+        # which is still a nice convenience
+        sub_latest = subs.get_sub(args.play[0]).latest_video_link()
+        webbrowser.open(sub_latest)
 
 if __name__ == "__main__":
     main()
