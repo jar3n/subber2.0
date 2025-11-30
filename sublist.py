@@ -312,4 +312,9 @@ class SubscriptionList:
         print(f"You watched all the latest videos!!")
 
     def get_sub(self, handle):
-        return Sub(self._api_key, handle, self._subs_json["subscriptions"][handle])
+        sub = None
+        try:
+            sub = Sub(self._api_key, handle, self._subs_json["subscriptions"][handle])
+        except KeyError as e:
+            print(f"Not subscribed to a channel with the handle {handle}")
+        return sub

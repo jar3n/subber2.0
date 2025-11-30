@@ -136,8 +136,10 @@ def main():
         # instead this command simply 
         # opens the youtube video url
         # which is still a nice convenience
-        sub_latest = subs.get_sub(args.play[0]).latest_video_link()
-        webbrowser.open(sub_latest)
+        sub = subs.get_sub(args.play[0])
+        if sub is not None:
+            sub_latest = sub.latest_video_link()
+            webbrowser.open(sub_latest)
 
 if __name__ == "__main__":
     main()
