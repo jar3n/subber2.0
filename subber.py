@@ -120,14 +120,10 @@ def main():
 
         # determine the order which the arguments were given
         if args.set_update_freq[0].isdigit():
-            up_freq = int(args.set_update_freq[0])
-            handle = args.set_update_freq[1]
-            subs.set_sub_update_freq(handle, up_freq)
+            subs.set_sub_update_freq(args.set_update_freq[1], int(args.set_update_freq[0]))
 
         elif args.set_update_freq[1].isdigit():
-            up_freq = int(args.set_update_freq[1])
-            handle = args.set_update_freq[0]
-            subs.set_sub_update_freq(handle, up_freq)
+            subs.set_sub_update_freq(args.set_update_freq[0], args.set_update_freq[1])
 
         else:
             print("No number was provided to set the update frequency for the sub.")
