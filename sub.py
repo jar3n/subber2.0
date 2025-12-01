@@ -1,5 +1,13 @@
+"""
+    Youtube Subscription Module that interacts
+    with the Youtube API to get information on
+    a channel's activity mainly their channel name
+    and the channel's latest upload.
 
-import requests, socket
+"""
+
+import requests
+import socket
 from datetime import datetime
 import isodate
 
@@ -8,10 +16,16 @@ import isodate
 ############################################
 
 def is_connected():
+    """
+        Function to check if connected to the internet 
+
+    Returns:
+        bool: True if connected, False otherwise
+    """
     try:
         sock = socket.create_connection(("www.google.com",80))
         if sock is not None:
-            sock.close
+            sock.close()
         return True
     except OSError:
         pass
@@ -23,7 +37,11 @@ def is_connected():
 #####################################
 
 class SubException(Exception):
-   
+    """
+       Exception class used for custom exceptions when 
+       interacting with the Youtube API. Provides
+       a code for ease of identification
+    """
     def __init__(self, message, code=None):
         super().__init__(message)  # Call the base class constructor
         self.code = code  # Optional error code
@@ -261,4 +279,8 @@ class Sub:
     
     def latest_video_link(self):
         return self._latest_video_url
+    
+    @property
+    def handle(self):
+        return self._handle
     
