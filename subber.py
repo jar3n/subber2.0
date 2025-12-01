@@ -41,7 +41,7 @@ def main():
                 " Make sure there is a line with \'[key]\' followed by a " + 
                 " line with \'api_key=YOUR_API_KEY\'")
         return
-    api_key = cp['key']['api key']
+    subs = SubscriptionList(cp['key']['api key'])
 
     parser = argparse.ArgumentParser(
         description="A tool for tracking youtube subscriptions locally!")
@@ -105,8 +105,6 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    subs = SubscriptionList(api_key)
-
     if args.list:
         subs.list_subs()
 
@@ -119,9 +117,6 @@ def main():
             subs.remove_subscription(handle)
 
     if args.set_update_freq:
-
-        up_freq = -1
-        handle = ""
 
         # determine the order which the arguments were given
         if args.set_update_freq[0].isdigit():
