@@ -32,16 +32,16 @@ def main():
         print("ERROR: cannot find the api_key file with you youtube API key in it." +
               " Make sure the file is in the same directory as the subber.py file.")
         return
-    else:
-        cp = configparser.ConfigParser()
-        try:
-            cp.read(str(api_key_file))
-        except configparser.MissingSectionHeaderError:
-            print("ERROR: api key file not properly formatted." +
-                  " Make sure there is a line with \'[key]\' followed by a " + 
-                  " line with \'api_key=YOUR_API_KEY\'")
-            return
-        api_key = cp['key']['api key']
+
+    cp = configparser.ConfigParser()
+    try:
+        cp.read(str(api_key_file))
+    except configparser.MissingSectionHeaderError:
+        print("ERROR: api key file not properly formatted." +
+                " Make sure there is a line with \'[key]\' followed by a " + 
+                " line with \'api_key=YOUR_API_KEY\'")
+        return
+    api_key = cp['key']['api key']
 
     parser = argparse.ArgumentParser(
         description="A tool for tracking youtube subscriptions locally!")
