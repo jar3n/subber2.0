@@ -36,6 +36,140 @@ def check_api_key():
     # return a subscription list object initialized with the key
     return SubscriptionList(cp['key']['api key'])
 
+
+def subscribe(handles:list[str], subs:SubscriptionList):
+    """Add channel handles to local subscriptions
+
+    Args:
+        handles (list[str]): the youtube channel handles to track
+        subs (SubscriptionList): the subscription list object
+    """
+    for handle in handles:
+        subs.add_subscription(handle)
+
+def unsubscribe(handles:list[str], subs:SubscriptionList):
+    """Remove channel handles from local subscriptions
+
+    Args:
+        handles (list[str]): youtube channel handles
+        subs (SubscriptionList): subscription list object 
+    """
+    for handle in handles:
+        subs.remove_subscription(handle)
+
+def set_update_frequency(args:list[str], subs:SubscriptionList):
+    """Set how often to look for a new video from the given creator
+
+    Args:
+        args (list[str]): the youtube channel handle and update frequency arguments
+        subs (SubscriptionList): 
+    """
+
+    handle = None
+    up_freq = None
+    for a in args.set_update_freq:
+        if a.isdigit():
+            up_freq = int(a)
+        else:
+            handle = a
+
+    if up_freq is None:
+        raise argparse.ArgumentError(argument=args.set_update_freq,
+            message="No number was provided to set the update frequency for the sub.")
+
+    subs.set_sub_update_freq(handle, up_freq)
+
+def mark_as_watched(handles:list[str], subs:SubscriptionList):
+    """Record that the latest videos from the given handles 
+       have been watched
+
+    Args:
+        handles (list[str]): handles of the youtube channels 
+        subs (SubscriptionList): subscription list object
+    """
+    for handle in handles:
+        subs.set_sub_watched(handle)
+
+def mark_as_not_interested(handles:list[str], subs:SubscriptionList):
+    """Record that the latest videos from the given handles
+       are not interesting
+
+    Args:
+        handles (list[str]): handles of youtube channels
+        subs (SubscriptionList): Subscription list object
+    """
+    for handle in handles:
+        subs.set_sub_not_interested(handle)
+
+class VideoPlayerException(Exception):
+    """Exception for problems with playing the video
+        in a browser
+
+    """
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return f"VideoPlayerException: {self.msg}"
+
+def play_latest(handle:str, subs:SubscriptionList):
+    """Open a browser window to the latest video
+       of the given youtube creator
+
+    Args:
+        handle (str): handle of the youtube channel
+        subs (SubscriptionList): subscription object list
+    """
+
+
+    sub = subs.get_sub(handle)
+    if sub is not None:
+        sub_latest_vid_link = sub.get_latest_video_link()
+        webbrowser.open(sub_latest_vid_link)
+    else:
+        raise VideoPlayerException(f"Not subscribed to the handle {handle}")
+
+
+def parse_arguments(parser:argparse.ArgumentParser, subs:SubscriptionList):
+    """Parse the arguments given from the command line
+
+    Args:
+        parser (argparse.ArgumentParser): the command line argument parser
+    """
+
+    args = parser.parse_args()
+
+    if args.list:
+        subs.list_subs()
+
+    if isinstance(args.subscribe, list):
+        subscribe(args.subscribe, subs)
+
+    if isinstance(args.unsubscribe, list):
+        unsubscribe(args.unsubscribe, list)
+
+    if args.set_update_freq:
+        try:
+            set_update_frequency(args.set_update_freq, subs)
+        except argparse.ArgumentError as e:
+            print(e.message)
+
+    if isinstance(args.watched, list):
+        mark_as_watched(args.watched, subs)
+
+    if args.watched_all:
+        subs.set_watched_all()
+
+    if isinstance(args.not_interested, list):
+        mark_as_not_interested(args.not_interested, subs)
+
+    if args.play:
+        try:
+            play_latest(args.play[0], subs)
+        except VideoPlayerException as e:
+            print(e.msg)
+
+
 def main():
     """
         Main function that intakes 
@@ -113,62 +247,11 @@ def main():
                         help="play the latest video from the given channel",
                         metavar="<channel handle>")
 
-    args = parser.parse_args()
-
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
 
-    if args.list:
-        subs.list_subs()
-
-    if isinstance(args.subscribe, list):
-        for handle in args.subscribe:
-            subs.add_subscription(handle)
-
-    if isinstance(args.unsubscribe, list):
-        for handle in args.unsubscribe:
-            subs.remove_subscription(handle)
-
-    if args.set_update_freq:
-
-        handle = None
-        up_freq = None
-        for a in args.set_update_freq:
-            if a.isdigit():
-                up_freq = int(a)
-            else:
-                handle = a
-
-        if up_freq is None:
-            print("No number was provided to set the update frequency for the sub.")
-            return
-
-        subs.set_sub_update_freq(handle, up_freq)
-
-
-    if isinstance(args.watched, list):
-        for handle in args.watched:
-            subs.set_sub_watched(handle)
-
-    if args.watched_all:
-        subs.set_watched_all()
-
-    if isinstance(args.not_interested, list):
-        for handle in args.not_interested:
-            subs.set_sub_not_interested(handle)
-
-    if args.play:
-        # Desire is to have a way to provide youtube
-        # videos without going to youtube website
-        # but youtube does not want that
-        # instead this command simply
-        # opens the youtube video url
-        # which is still a nice convenience
-        sub = subs.get_sub(args.play[0])
-        if sub is not None:
-            sub_latest = sub.latest_video_link()
-            webbrowser.open(sub_latest)
+    parse_arguments(parser, subs)
 
 if __name__ == "__main__":
     main()
