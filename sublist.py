@@ -295,7 +295,7 @@ class SubscriptionList:
                     item["uploads"].sort(key=
                     lambda sub: sub.get_latest_upload_time(), reverse=True)
                     print("----------------------------")
-                    print(f"Uploads that happened {key} ({item["len"]}):")
+                    print(f"Uploads that happened {key} ({item['len']}):")
                     print("----------------------------\n")
                     for sub in item["uploads"]:
                         print(sub)
