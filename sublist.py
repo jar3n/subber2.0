@@ -201,6 +201,40 @@ class SubscriptionList:
         self._subs_json["subscriptions"][sub.handle] = sub.make_json()
         self.store_list()
 
+    def display_sub_list(self, categorized_uploads:dict, failed_sub_checks:list):
+        """display the subscriptions latest content to the terminal
+
+        Args:
+            categorized_uploads (dict): a dictionary
+            with the latest uploads of the subscribed youtube channels
+            failed_sub_checks (list): a list of the channels
+            who failed when they were checked
+        """
+        num_cats_with_no_vids = 0
+        for key,item in categorized_uploads.items():
+            if item["len"] > 0:
+                item["uploads"].sort(key=
+                lambda sub: sub.get_latest_upload_time(), reverse=True)
+                print("----------------------------")
+                print(f"Uploads that happened {key} ({item['len']}):")
+                print("----------------------------\n")
+                for sub in item["uploads"]:
+                    print(sub)
+                    print("\n")
+            else:
+                num_cats_with_no_vids += 1
+
+        if num_cats_with_no_vids == len(list(categorized_uploads.keys())):
+            print("You have seen the all latest content from the" +
+                    "channels you have subscribed to that could be checked.")
+
+        if len(failed_sub_checks) == 0:
+            print("All of your subscriptions were successfully checked.")
+        else:
+            print("The following channels were not successfully checked.")
+            for channel in failed_sub_checks:
+                print(f" - {channel}")
+
     def list_subs(self):
         """
             List the subscriptions with their
@@ -291,31 +325,7 @@ class SubscriptionList:
                             # no item was retreived so continue checking
                             pass
 
-            # sort the uploads and print them
-            num_cats_with_no_vids = 0
-            for key,item in categorized_uploads.items():
-                if item["len"] > 0:
-                    item["uploads"].sort(key=
-                    lambda sub: sub.get_latest_upload_time(), reverse=True)
-                    print("----------------------------")
-                    print(f"Uploads that happened {key} ({item['len']}):")
-                    print("----------------------------\n")
-                    for sub in item["uploads"]:
-                        print(sub)
-                        print("\n")
-                else:
-                    num_cats_with_no_vids += 1
-
-            if num_cats_with_no_vids == len(list(categorized_uploads.keys())):
-                print("You have seen the all latest content from the" +
-                      "channels you have subscribed to that could be checked.")
-
-            if len(failed_sub_checks) == 0:
-                print("All of your subscriptions were successfully checked.")
-            else:
-                print("The following channels were not successfully checked.")
-                for channel in failed_sub_checks:
-                    print(f" - {channel}")
+            self.display_sub_list(categorized_uploads, failed_sub_checks)
 
     def set_sub_update_freq(self, handle:str, new_update_freq:float):
         """
