@@ -120,12 +120,9 @@ def play_latest(handle:str, subs:SubscriptionList):
         handle (str): handle of the youtube channel
         subs (SubscriptionList): subscription object list
     """
-
-
     sub = subs.get_sub(handle)
     if sub is not None:
-        sub_latest_vid_link = sub.get_latest_video_link()
-        webbrowser.open(sub_latest_vid_link)
+        webbrowser.open(sub.latest_video_link())
     else:
         raise VideoPlayerException(f"Not subscribed to the handle {handle}")
 
