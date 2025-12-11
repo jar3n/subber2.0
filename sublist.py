@@ -232,11 +232,8 @@ class SubscriptionList:
                 }
             }
 
-            # use this for later
-            latest_possible_time = datetime.now()
-
             # do some multiprocessing to
-            # process the subs  asynchronously
+            # process the subs asynchronously
             with Manager() as mpm:
                 sub_queue = mpm.Queue()
                 handles = list(self._subs_json["subscriptions"].keys())
@@ -245,7 +242,10 @@ class SubscriptionList:
 
                 with ProcessPoolExecutor(max_workers=mp.cpu_count()) as pool_exe:
                     for i in range(self._sub_count):
-                        pool_exe.submit(self.check_sub, handles[i], channel_data[i], sub_queue)
+                        pool_exe.submit(self.check_sub,
+                                        handles[i],
+                                        channel_data[i],
+                                        sub_queue)
 
                     completed = 0
                     while completed < self._sub_count:
@@ -258,31 +258,34 @@ class SubscriptionList:
                                 proc_result[1] == SubscriptionList.QueueLabels.NORMAL:
                                 # this means the sub can be added to the display lists
                                 # first if updated then update the json
-                                sub = proc_result[0]
+
                                 if proc_result[1] == SubscriptionList.QueueLabels.UPDATED:
-                                    self.update_sub_json(sub)
+                                    self.update_sub_json(proc_result[0])
 
                                 # now determine the list to add the
                                 # sub to
-                                u_time = sub.get_latest_upload_time()
 
-                                u_time_diff = latest_possible_time - u_time
-                                if u_time_diff.days <= 0:
-                                    categorized_uploads["today"]["uploads"].append(sub)
+                                time_diff = datetime.now() - proc_result[0].get_latest_upload_time()
+                                if time_diff.days <= 0:
+                                    categorized_uploads["today"]["uploads"].append(proc_result[0])
                                     categorized_uploads["today"]["len"] += 1
-                                    # today_uploads.append(sub)
-                                elif u_time_diff.days <= 7:
-                                    categorized_uploads["this week"]["uploads"].append(sub)
+
+                                elif time_diff.days <= 7:
+                                    categorized_uploads["this week"]["uploads"].append(
+                                        proc_result[0]
+                                        )
                                     categorized_uploads["this week"]["len"] += 1
-                                    # this_week_uploads.append(sub)
+
                                 else:
-                                    categorized_uploads["a while ago"]["uploads"].append(sub)
+                                    categorized_uploads["a while ago"]["uploads"].append(
+                                        proc_result[0]
+                                        )
                                     categorized_uploads["a while ago"]["len"] += 1
-                                    # long_ago_uploads.append(sub)
+
                             elif proc_result[1] == SubscriptionList.QueueLabels.FAILED:
                                 # this means it failed
                                 # so add it to the list
-                                failed_sub_checks.append(sub)
+                                failed_sub_checks.append(proc_result[0])
 
                         except Empty:
                             # no item was retreived so continue checking
