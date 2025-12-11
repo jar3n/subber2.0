@@ -217,9 +217,20 @@ class SubscriptionList:
             # section on uploading today
             # section on uploading within the week
             # section on not uploaded in a long time
-            today_uploads = []
-            this_week_uploads = []
-            long_ago_uploads = []
+            categorized_uploads = {
+                "today":{
+                    "uploads":[],
+                    "len": 0
+                },
+                "this week":{
+                    "uploads":[],
+                    "len": 0
+                },
+                "a while ago":{
+                    "uploads":[],
+                    "len": 0
+                }
+            }
 
             # use this for later
             latest_possible_time = datetime.now()
@@ -257,11 +268,17 @@ class SubscriptionList:
 
                                 u_time_diff = latest_possible_time - u_time
                                 if u_time_diff.days <= 0:
-                                    today_uploads.append(sub)
+                                    categorized_uploads["today"]["uploads"].append(sub)
+                                    categorized_uploads["today"]["len"] += 1
+                                    # today_uploads.append(sub)
                                 elif u_time_diff.days <= 7:
-                                    this_week_uploads.append(sub)
+                                    categorized_uploads["this week"]["uploads"].append(sub)
+                                    categorized_uploads["this week"]["len"] += 1
+                                    # this_week_uploads.append(sub)
                                 else:
-                                    long_ago_uploads.append(sub)
+                                    categorized_uploads["a while ago"]["uploads"].append(sub)
+                                    categorized_uploads["a while ago"]["len"] += 1
+                                    # long_ago_uploads.append(sub)
                             elif proc_result[1] == SubscriptionList.QueueLabels.FAILED:
                                 # this means it failed
                                 # so add it to the list
@@ -272,32 +289,21 @@ class SubscriptionList:
                             pass
 
             # sort the uploads and print them
-            if len(today_uploads) > 0:
-                today_uploads.sort(key= lambda sub: sub.get_latest_upload_time(), reverse=True)
-                print("----------------------------")
-                print(f"Uploads that happened today ({len(today_uploads)}):")
-                print("----------------------------\n")
-                for up in today_uploads:
-                    print(f" {up}\n")
+            num_cats_with_no_vids = 0
+            for key,item in categorized_uploads.items():
+                if item["len"] > 0:
+                    item["uploads"].sort(key=
+                    lambda sub: sub.get_latest_upload_time(), reverse=True)
+                    print("----------------------------")
+                    print(f"Uploads that happened {key} ({item["len"]}):")
+                    print("----------------------------\n")
+                    for sub in item["uploads"]:
+                        print(sub)
+                        print("\n")
+                else:
+                    num_cats_with_no_vids += 1
 
-            if len(this_week_uploads) > 0:
-                this_week_uploads.sort(key= lambda sub: sub.get_latest_upload_time(), reverse=True)
-                print("\n----------------------------")
-                print(f"Uploads that happened this week ({len(this_week_uploads)}):")
-                print("----------------------------\n")
-                for up in this_week_uploads:
-                    print(f" {up}\n")
-
-            if len(long_ago_uploads) > 0:
-                long_ago_uploads.sort(key= lambda sub: sub.get_latest_upload_time(), reverse=True)
-                print("\n----------------------------")
-                print(f"Uploads that happened a while ago ({len(long_ago_uploads)}):")
-                print("----------------------------\n")
-                for up in long_ago_uploads:
-                    print(f" {up}\n")
-
-            if len(long_ago_uploads) == 0 and len(today_uploads) == 0 and \
-               len(this_week_uploads) == 0:
+            if num_cats_with_no_vids == len(list(categorized_uploads.keys())):
                 print("You have seen the all latest content from the" +
                       "channels you have subscribed to that could be checked.")
 
