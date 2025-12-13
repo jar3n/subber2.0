@@ -262,8 +262,7 @@ class Sub:
 
         return base_url + info + key_suffix
 
-    @property
-    def get_latest_upload_time(self):
+    def latest_upload_time(self):
         """Gets the time that the latest video
            from the channel was uploaded
 
@@ -287,7 +286,7 @@ class Sub:
         return sub_str
 
     @property
-    def get_name(self):
+    def name(self):
         """Get the fancy name of the youtube channel
 
         Returns:
@@ -393,7 +392,6 @@ class Sub:
         """
         return self._watched_latest
 
-    @property
     def just_watched(self):
         """Sets the watched attribute to 
            True because the user has watched the
@@ -401,7 +399,6 @@ class Sub:
         """
         self._watched_latest = True
 
-    @property
     def not_interested(self):
         """Sets the not interested attribute
            to True because the user marked the 

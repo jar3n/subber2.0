@@ -112,7 +112,7 @@ class SubscriptionList:
             try:
                 new_sub = Sub(self._api_key, handle)
                 self.update_sub_json(new_sub)
-                print(f"Subscribed to {new_sub.get_name()}")
+                print(f"Subscribed to {new_sub.name}")
             except SubException as e:
                 if e.code == 3:
                     print(f"Failed to verify the handle, make sure {handle} is correct.")
@@ -175,7 +175,7 @@ class SubscriptionList:
             # in future refactor the sub class
             # to not throw exceptions in the constructor
             queue.put([sub_json_key, SubscriptionList.QueueLabels.FAILED, error])
-        elif sub.new_video():
+        elif sub.new_video:
             # put the sub in the new video queue if
             # a new video was uploaded since last check
             queue.put([sub, SubscriptionList.QueueLabels.UPDATED])
@@ -214,7 +214,7 @@ class SubscriptionList:
         for key,item in categorized_uploads.items():
             if item["len"] > 0:
                 item["uploads"].sort(key=
-                lambda sub: sub.get_latest_upload_time(), reverse=True)
+                lambda sub: sub.latest_upload_time(), reverse=True)
                 print("----------------------------")
                 print(f"Uploads that happened {key} ({item['len']}):")
                 print("----------------------------\n")
@@ -299,7 +299,7 @@ class SubscriptionList:
                                 # now determine the list to add the
                                 # sub to
 
-                                time_diff = datetime.now() - proc_result[0].get_latest_upload_time()
+                                time_diff = datetime.now() - proc_result[0].latest_upload_time()
                                 if time_diff.days <= 0:
                                     categorized_uploads["today"]["uploads"].append(proc_result[0])
                                     categorized_uploads["today"]["len"] += 1
@@ -344,7 +344,7 @@ class SubscriptionList:
 
             # add the new json to the list and store it
             self.update_sub_json(sub)
-            print(f"Set the update frequency for {sub.get_name()} to {new_update_freq} days.")
+            print(f"Set the update frequency for {sub.name} to {new_update_freq} days.")
         else:
             print(f"You are not subbed to a channel with the handle {handle}")
 
@@ -366,7 +366,7 @@ class SubscriptionList:
 
             # save the update
             self.update_sub_json(sub)
-            print(f"Marked that you watched the latest from {sub.get_name()}")
+            print(f"Marked that you watched the latest from {sub.name}")
         else:
             print(f"You are not subbed to a channel with the handle {handle}")
 
@@ -384,7 +384,7 @@ class SubscriptionList:
             sub.not_interested()
 
             self.update_sub_json(sub)
-            print(f"Marked that you are not interested in the latest from {sub.get_name()}")
+            print(f"Marked that you are not interested in the latest from {sub.name}")
         else:
             print(f"You are not subbed to a channel with the handle {handle}")
 
