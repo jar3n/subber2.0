@@ -110,7 +110,8 @@ class SubscriptionList:
 
         if not self.is_subbed(handle):
             try:
-                new_sub = Sub(self._api_key, handle)
+                new_sub = Sub(handle, {})
+                
                 self.update_sub_json(new_sub)
                 print(f"Subscribed to {new_sub.name}")
             except SubException as e:
