@@ -11,11 +11,9 @@ import json
 from os import mkdir
 from os.path import dirname, exists, join, abspath
 from datetime import datetime
-import multiprocessing as mp
-from multiprocessing import Manager, Queue
-from queue import Empty
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
+from tqdm import tqdm
 
 # custom modules
 from sub import Sub
@@ -74,10 +72,6 @@ class SubscriptionList:
 
         # init the youtube client
         self._client = YouTubeClient(self._api_key)
-
-        # set up the multiprocessing
-        # this determines how to create subprocesses
-        mp.set_start_method('fork')
 
     def store_list(self):
         """
@@ -158,7 +152,7 @@ class SubscriptionList:
         else:
             print(f"You were never subscribed to {handle}")
 
-    def check_sub(self, sub_json_key:str, sub_json_value:str, queue:Queue):
+    def check_sub(self, sub_json_key:str, sub_json_value:str):
         """
            Thread safe function for checking the status 
            of a channel and adding it to the shared queue
@@ -177,30 +171,29 @@ class SubscriptionList:
 
         try:
             # check if sub needs refresh
-            if sub.should_refresh(datetime.now):
+            if sub.should_refresh():
                 title, pub_date, url, dur = self._client.get_latest_upload(sub.uploads_id)
                 # check if the latest is different from the latest
                 # stored in file
                 # its possible if the video was marked as not interesting
+                # if this is false then it will go on to check the next thing
                 if sub.latest_upload_time != pub_date:
                     # this means the latest is different from
                     # the video stored in the file
                     sub.apply_update(title, pub_date, url, dur)
 
-                    queue.put([sub, SubscriptionList.QueueLabels.UPDATED])
-                else:
-                    # if the latest video is the same as the stored video
-                    # then the sub was not updated so its normal
-                    queue.put([sub, SubscriptionList.QueueLabels.NORMAL])
-            elif sub.watched or sub.not_interested:
-                # if should not refresh and watched or not interesting
-                # then ignore it so it does not display in the list
-                queue.put([sub, SubscriptionList.QueueLabels.IGNORE])
-            else:
-                queue.put([sub, SubscriptionList.QueueLabels.NORMAL])
+                    return (sub, SubscriptionList.QueueLabels.UPDATED)
+
+            if not sub.watched and not sub.not_interested:
+                return (sub, SubscriptionList.QueueLabels.NORMAL)
+            
+            # here just to ensure this function always returns
+            # something
+            # but the tag is not used later
+            return (sub, SubscriptionList.QueueLabels.IGNORE)
 
         except YouTubeException as yte:
-            queue.put([sub, SubscriptionList.QueueLabels.FAILED, yte])
+            return (sub, SubscriptionList.QueueLabels.FAILED, yte)
 
     def update_sub_json(self, sub:Sub):
         """
@@ -229,7 +222,7 @@ class SubscriptionList:
         for key,item in categorized_uploads.items():
             if item["len"] > 0:
                 item["uploads"].sort(key=
-                lambda sub: sub.latest_upload_time(), reverse=True)
+                lambda sub: sub.latest_upload_time, reverse=True)
                 print("----------------------------")
                 print(f"Uploads that happened {key} ({item['len']}):")
                 print("----------------------------\n")
@@ -260,87 +253,64 @@ class SubscriptionList:
         """
         if self._no_subs:
             print("There are no subscriptions")
-        else:
-            # imagine splitting it up based
-            # on recent upload
-            # section on uploading today
-            # section on uploading within the week
-            # section on not uploaded in a long time
-            categorized_uploads = {
-                "today":{
-                    "uploads":[],
-                    "len": 0
-                },
-                "this week":{
-                    "uploads":[],
-                    "len": 0
-                },
-                "a while ago":{
-                    "uploads":[],
-                    "len": 0
-                }
-            }
+            return
 
-            # do some multiprocessing to
-            # process the subs asynchronously
-            with Manager() as mpm:
-                sub_queue = mpm.Queue()
-                handles = list(self._subs_json["subscriptions"].keys())
-                channel_data = list(self._subs_json["subscriptions"].values())
-                failed_sub_checks = []
+        # imagine splitting it up based
+        # on recent upload
+        # section on uploading today
+        # section on uploading within the week
+        # section on not uploaded in a long time
+        categorized_uploads = {
+            "today":{"uploads":[], "len": 0 },
+            "this week":{ "uploads":[], "len": 0 },
+            "a while ago":{ "uploads":[],"len": 0 }
+        }
 
-                with ProcessPoolExecutor(max_workers=mp.cpu_count()) as pool_exe:
-                    for i in range(self._sub_count):
-                        pool_exe.submit(self.check_sub,
-                                        handles[i],
-                                        channel_data[i],
-                                        sub_queue)
+        # do some multiprocessing to
+        # process the subs asynchronously
+        failed_sub_checks = []
 
-                    completed = 0
-                    while completed < self._sub_count:
-                        try:
-                            # got an item from the queue
-                            proc_result = sub_queue.get(timeout=0.5)
+        with ThreadPoolExecutor(max_workers=10) as pool_exe:
+            futures = [
+                pool_exe.submit(self.check_sub, handle, data)
+                for handle, data in self._subs.items()
+            ]
 
-                            completed += 1
-                            if proc_result[1] == SubscriptionList.QueueLabels.UPDATED or \
-                                proc_result[1] == SubscriptionList.QueueLabels.NORMAL:
-                                # this means the sub can be added to the display lists
-                                # first if updated then update the json
+            with tqdm(total=len(futures), desc="Checking Subscriptions") as progress_bar:
+                for future in as_completed(futures):
+                    result = future.result()
+                    progress_bar.update(1)
 
-                                if proc_result[1] == SubscriptionList.QueueLabels.UPDATED:
-                                    self.update_sub_json(proc_result[0])
+                    label = result[1]
+                    sub = result[0]
 
-                                # now determine the list to add the
-                                # sub to
+                    if label in (
+                        SubscriptionList.QueueLabels.UPDATED,
+                        SubscriptionList.QueueLabels.NORMAL
+                    ):
+                        if label == SubscriptionList.QueueLabels.UPDATED:
+                            self.update_sub_json(sub)
 
-                                time_diff = datetime.now() - proc_result[0].latest_upload_time
-                                if time_diff.days <= 0:
-                                    categorized_uploads["today"]["uploads"].append(proc_result[0])
-                                    categorized_uploads["today"]["len"] += 1
 
-                                elif time_diff.days <= 7:
-                                    categorized_uploads["this week"]["uploads"].append(
-                                        proc_result[0]
-                                        )
-                                    categorized_uploads["this week"]["len"] += 1
+                        time_diff = datetime.now() - sub.latest_upload_time
+                        if time_diff.days <= 0:
+                            categorized_uploads["today"]["uploads"].append(sub)
+                            categorized_uploads["today"]["len"] += 1
 
-                                else:
-                                    categorized_uploads["a while ago"]["uploads"].append(
-                                        proc_result[0]
-                                        )
-                                    categorized_uploads["a while ago"]["len"] += 1
+                        elif time_diff.days <= 7:
+                            categorized_uploads["this week"]["uploads"].append(sub)
+                            categorized_uploads["this week"]["len"] += 1
 
-                            elif proc_result[1] == SubscriptionList.QueueLabels.FAILED:
-                                # this means it failed
-                                # so add it to the list
-                                failed_sub_checks.append(proc_result[0])
+                        else:
+                            categorized_uploads["a while ago"]["uploads"].append(sub)
+                            categorized_uploads["a while ago"]["len"] += 1
 
-                        except Empty:
-                            # no item was retreived so continue checking
-                            pass
+                    elif label == SubscriptionList.QueueLabels.FAILED:
+                        # this means it failed
+                        # so add it to the list
+                        failed_sub_checks.append(sub)
 
-            self.display_sub_list(categorized_uploads, failed_sub_checks)
+        self.display_sub_list(categorized_uploads, failed_sub_checks)
 
     def set_sub_update_freq(self, handle:str, new_update_freq:float):
         """

@@ -100,7 +100,7 @@ def play_latest(handle:str, subs:SubscriptionList):
     """
     sub = subs.get_sub(handle)
     if sub is not None:
-        webbrowser.open(sub.latest_video_link())
+        webbrowser.open(sub.latest_video_url)
     else:
         raise VideoPlayerException(f"Not subscribed to the handle {handle}")
 

@@ -59,9 +59,26 @@ class Sub:
             datetime: the date and time of the 
             latest upload
         """
-        return datetime.strptime(
-            self._data["latest upload time"], self._DT_FMT
-        )
+        if "latest upload time" in list(self._data.keys()):
+            return datetime.strptime(
+                self._data["latest upload time"], self._DT_FMT
+            )
+        
+        return None
+    
+    @property
+    def latest_video_url(self) -> str:
+        """Get the url for the latest video
+           from a channel
+
+        Returns:
+            str: the url of the latest
+            video from the channel
+        """
+        if "latest video url" in list(self._data.keys()):
+            return self._data["latest video url"]
+        
+        return None
 
     @property
     def update_frequency(self) -> int:
@@ -74,7 +91,10 @@ class Sub:
         Returns:
             int: the update frequency
         """
-        return int(self._data.get("update rate", 1))
+        if "update rate" in list(self._data.keys()):
+            return self._data["update rate"]
+        
+        return 1
 
     @property
     def watched(self) -> bool:
@@ -86,7 +106,10 @@ class Sub:
             bool: True if the latest video of this 
             channel was watched
         """
-        return bool(self._data.get("watched latest", False))
+        if "watched latest" in list(self._data.keys()):
+            return self._data["watched latest"]
+
+        return False
 
     @property
     def not_interested(self) -> bool:
@@ -104,11 +127,14 @@ class Sub:
             bool: True if the latest video of the 
             channel is marked as not interested
         """
-        return bool(self._data.get("not_interested", False))
+        if "not_interested" in list(self._data.keys()):
+            return self._data["not_interested"]
+
+        return False
 
     # ---------- state helpers ----------
 
-    def should_refresh(self, now: datetime) -> bool:
+    def should_refresh(self) -> bool:
         """Determine whether the channel should be checked
            for new content 
 
@@ -122,7 +148,11 @@ class Sub:
         """
         if self.not_interested:
             return True
-        return (now - self.latest_upload_time).days >= self.update_frequency
+
+        if self.watched:
+            return (datetime.now() - self.latest_upload_time).days >= self.update_frequency
+
+        return True
 
     def mark_watched(self) -> None:
         """Record that the user has 
