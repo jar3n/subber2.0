@@ -45,14 +45,14 @@ def set_update_frequency(args:list[str], subs:SubscriptionList):
 
     handle = None
     up_freq = None
-    for a in args.set_update_freq:
+    for a in args:
         if a.isdigit():
             up_freq = int(a)
         else:
             handle = a
 
     if up_freq is None:
-        raise argparse.ArgumentError(argument=args.set_update_freq,
+        raise argparse.ArgumentError(argument='args.set_update_freq',
             message="No number was provided to set the update frequency for the sub.")
 
     subs.set_sub_update_freq(handle, up_freq)
