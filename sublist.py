@@ -186,7 +186,7 @@ class SubscriptionList:
 
             if not sub.watched and not sub.not_interested:
                 return (sub, SubscriptionList.QueueLabels.NORMAL)
-            
+
             # here just to ensure this function always returns
             # something
             # but the tag is not used later

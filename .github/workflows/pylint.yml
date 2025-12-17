@@ -21,6 +21,7 @@ jobs:
         pip install requests
         pip install isodate
         pip install pytest
+        pip install tqdm
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')

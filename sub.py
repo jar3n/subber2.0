@@ -63,9 +63,9 @@ class Sub:
             return datetime.strptime(
                 self._data["latest upload time"], self._DT_FMT
             )
-        
+
         return None
-    
+
     @property
     def latest_video_url(self) -> str:
         """Get the url for the latest video
@@ -77,7 +77,7 @@ class Sub:
         """
         if "latest video url" in list(self._data.keys()):
             return self._data["latest video url"]
-        
+
         return None
 
     @property
@@ -93,7 +93,7 @@ class Sub:
         """
         if "update rate" in list(self._data.keys()):
             return self._data["update rate"]
-        
+
         return 1
 
     @property
