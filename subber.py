@@ -8,33 +8,11 @@
 # python modules
 import sys
 import argparse
-import configparser
-from os.path import dirname, abspath
-from pathlib import Path
-from inspect import getsourcefile
 import webbrowser
 
-
 # custom modules
+from api_key_utils import check_api_key, APIKeyRequestException
 from sublist import SubscriptionList
-
-
-def check_api_key():
-    """
-        Helper function to check for the api key configuration file
-    """
-    api_key_file = Path(f"{dirname(abspath(getsourcefile(lambda:0)))}/api_key")
-    if not api_key_file.is_file():
-        raise FileNotFoundError()
-
-    cp = configparser.ConfigParser()
-    try:
-        cp.read(str(api_key_file))
-    except configparser.MissingSectionHeaderError as e:
-        raise e
-
-    # return a subscription list object initialized with the key
-    return SubscriptionList(cp['key']['api key'])
 
 
 def subscribe(handles:list[str], subs:SubscriptionList):
@@ -176,16 +154,9 @@ def main():
     """
     subs = None
     try:
-        subs = check_api_key()
-    except FileNotFoundError:
-        print("ERROR: cannot find the api_key file with you " +
-        "youtube API key in it. Make sure the file is in the" +
-        " same directory as the subber.py file.")
-        return
-    except configparser.MissingSectionHeaderError:
-        print("ERROR: api key file not properly formatted."+
-            " Make sure there is a line with \'[key]\' followed "+
-            "by a line with \'api_key=YOUR_API_KEY\'")        
+        subs = SubscriptionList(check_api_key())
+    except APIKeyRequestException as e:
+        print(e)
         return
 
     parser = argparse.ArgumentParser(
