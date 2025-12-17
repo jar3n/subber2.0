@@ -180,8 +180,8 @@ class YouTubeClient:
         Returns:
             tuple: a set containing details 
             used for the channel. Indexes below:
-            0: uploads id
-            1: channel display name
+            0: display name 
+            1: channel uploads playlist id
         """
         try:
             channel_details_url = self.create_api_url(

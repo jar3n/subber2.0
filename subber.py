@@ -121,7 +121,7 @@ def parse_arguments(parser:argparse.ArgumentParser, subs:SubscriptionList):
         subscribe(args.subscribe, subs)
 
     if isinstance(args.unsubscribe, list):
-        unsubscribe(args.unsubscribe, list)
+        unsubscribe(args.unsubscribe, subs)
 
     if args.set_update_freq:
         try:

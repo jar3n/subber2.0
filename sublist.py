@@ -123,7 +123,7 @@ class SubscriptionList:
                 # url
                 # name
                 channel_id = self._client.get_channel_id(handle)
-                uploads_id, channel_name = self._client.get_channel_details(channel_id)
+                channel_name, uploads_id = self._client.get_channel_details(channel_id)
                 channel_url = self._client.get_channel_url(handle)
 
                 sub_data = {
