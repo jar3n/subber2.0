@@ -18,7 +18,8 @@ from concurrent.futures import ProcessPoolExecutor
 from enum import Enum
 
 # custom modules
-from sub import SubException, Sub
+from sub import Sub
+from ytclient import YouTubeClient, YouTubeException
 
 #############################################################
 # Class for getting the Subscriptions List and Modifying it #
@@ -63,11 +64,16 @@ class SubscriptionList:
         # from the file
         with open(self._file_path, 'r', encoding='utf-8') as file:
             self._subs_json = json.load(file)
+
         self._no_subs = self._subs_json["subscriptions"] == {}
+        self._subs = self._subs_json["subscriptions"]
         if self._no_subs:
             self._sub_count = 0
         else:
-            self._sub_count = len(list(self._subs_json["subscriptions"]))
+            self._sub_count = len(list(self._subs))
+
+        # init the youtube client
+        self._client = YouTubeClient(self._api_key)
 
         # set up the multiprocessing
         # this determines how to create subprocesses
@@ -78,6 +84,7 @@ class SubscriptionList:
             Store the list of json objects to the file
         """
         with open(self._file_path, 'w', encoding='utf-8') as file:
+            self._subs_json["subscriptions"] = self._subs
             json.dump(self._subs_json, file, ensure_ascii=False, indent=4)
 
     def is_subbed(self, handle):
@@ -92,7 +99,7 @@ class SubscriptionList:
             bool: returns True if the handle is in the list 
             and False otherwise.
         """
-        handles = list(self._subs_json["subscriptions"].keys())
+        handles = list(self._subs.keys())
         return handle in handles
 
     def add_subscription(self, handle:str):
@@ -110,23 +117,31 @@ class SubscriptionList:
 
         if not self.is_subbed(handle):
             try:
-                new_sub = Sub(handle, {})
-                
+                # info to get
+                # channel id
+                # uploads id
+                # url
+                # name
+                channel_id = self._client.get_channel_id(handle)
+                uploads_id, channel_name = self._client.get_channel_details(channel_id)
+                channel_url = self._client.get_channel_url(handle)
+
+                sub_data = {
+                    "name": channel_name,
+                    "url": channel_url,
+                    "id" : channel_id,
+                    "uploads id": uploads_id
+                    }
+
+                new_sub = Sub(handle, sub_data)
+
                 self.update_sub_json(new_sub)
                 print(f"Subscribed to {new_sub.name}")
-            except SubException as e:
-                if e.code == 3:
-                    print(f"Failed to verify the handle, make sure {handle} is correct.")
-                elif e.code == 7:
-                    print(f"Could not subscribe to {handle} because failed" +
-                    " to get their latest uploads. Not sure why (blame phillipdefraco)")
-                elif e.code == 56:
-                    print("Detected no internet connection, check your connection and try again")
-                else:
-                    raise e
+            except YouTubeException as e:
+                raise e
         else:
-            sub_fancy_handle = self._subs_json["subscriptions"][handle]['name']
-            print(f"You are already subscribed to {sub_fancy_handle}")
+            sub = Sub(handle, self._subs[handle])
+            print(f"You are already subscribed to {sub.name}")
 
     def remove_subscription(self, handle:str):
         """
@@ -137,9 +152,9 @@ class SubscriptionList:
         """
 
         if self.is_subbed(handle):
-            unsub = self._subs_json["subscriptions"].pop(handle)
+            unsub = Sub(handle, self._subs.pop(handle))
             self.store_list()
-            print(f"Unsubscribed from {unsub['name']}")
+            print(f"Unsubscribed from {unsub.name}")
         else:
             print(f"You were never subscribed to {handle}")
 
@@ -158,35 +173,34 @@ class SubscriptionList:
             the channel handle such as latest video and last upload time, etc.
             queue (): _description_
         """
-        sub = None
-        errored = False
-        error = None
+        sub = Sub(sub_json_key, sub_json_value)
+
         try:
-            sub = Sub(self._api_key, sub_json_key, sub_json_value)
+            # check if sub needs refresh
+            if sub.should_refresh(datetime.now):
+                title, pub_date, url, dur = self._client.get_latest_upload(sub.uploads_id)
+                # check if the latest is different from the latest
+                # stored in file
+                # its possible if the video was marked as not interesting
+                if sub.latest_upload_time != pub_date:
+                    # this means the latest is different from
+                    # the video stored in the file
+                    sub.apply_update(title, pub_date, url, dur)
 
-        except SubException as se:
-            # raise flag to add the sub to the error queue
-            errored = True
-            error = se
+                    queue.put([sub, SubscriptionList.QueueLabels.UPDATED])
+                else:
+                    # if the latest video is the same as the stored video
+                    # then the sub was not updated so its normal
+                    queue.put([sub, SubscriptionList.QueueLabels.NORMAL])
+            elif sub.watched or sub.not_interested:
+                # if should not refresh and watched or not interesting
+                # then ignore it so it does not display in the list
+                queue.put([sub, SubscriptionList.QueueLabels.IGNORE])
+            else:
+                queue.put([sub, SubscriptionList.QueueLabels.NORMAL])
 
-        if errored:
-            # add the sub to the error queue
-            # or really just the sub channel name
-            # safest bet is to use the json key
-            # in future refactor the sub class
-            # to not throw exceptions in the constructor
-            queue.put([sub_json_key, SubscriptionList.QueueLabels.FAILED, error])
-        elif sub.new_video:
-            # put the sub in the new video queue if
-            # a new video was uploaded since last check
-            queue.put([sub, SubscriptionList.QueueLabels.UPDATED])
-        elif sub.have_watched() or sub.is_not_interested():
-            # here because the number of processes
-            # equals number of subs
-            # so ignore all subs in this category
-            queue.put([sub, SubscriptionList.QueueLabels.IGNORE])
-        else:
-            queue.put([sub, SubscriptionList.QueueLabels.NORMAL])
+        except YouTubeException as yte:
+            queue.put([sub, SubscriptionList.QueueLabels.FAILED, yte])
 
     def update_sub_json(self, sub:Sub):
         """
@@ -199,7 +213,7 @@ class SubscriptionList:
             information to store in file
         """
 
-        self._subs_json["subscriptions"][sub.handle] = sub.make_json()
+        self._subs[sub.handle] = sub.data
         self.store_list()
 
     def display_sub_list(self, categorized_uploads:dict, failed_sub_checks:list):
@@ -300,7 +314,7 @@ class SubscriptionList:
                                 # now determine the list to add the
                                 # sub to
 
-                                time_diff = datetime.now() - proc_result[0].latest_upload_time()
+                                time_diff = datetime.now() - proc_result[0].latest_upload_time
                                 if time_diff.days <= 0:
                                     categorized_uploads["today"]["uploads"].append(proc_result[0])
                                     categorized_uploads["today"]["len"] += 1
@@ -340,8 +354,8 @@ class SubscriptionList:
 
         if self.is_subbed(handle):
             # get the sub and change its update freq
-            sub = Sub(self._api_key, handle, self._subs_json["subscriptions"][handle])
-            sub.change_update_frequency(new_update_freq)
+            sub = Sub(handle, self._subs[handle])
+            sub.set_update_frequency(new_update_freq)
 
             # add the new json to the list and store it
             self.update_sub_json(sub)
@@ -362,8 +376,8 @@ class SubscriptionList:
         if self.is_subbed(handle):
             # get the sub and set the latest
             # has been watched
-            sub = Sub(self._api_key, handle, self._subs_json["subscriptions"][handle])
-            sub.just_watched()
+            sub = Sub(handle, self._subs[handle])
+            sub.mark_watched()
 
             # save the update
             self.update_sub_json(sub)
@@ -381,8 +395,8 @@ class SubscriptionList:
             is going to be marked as not interested
         """
         if self.is_subbed(handle):
-            sub = Sub(self._api_key, handle, self._subs_json["subscriptions"][handle])
-            sub.not_interested()
+            sub = Sub(handle, self._subs[handle])
+            sub.mark_not_interested()
 
             self.update_sub_json(sub)
             print(f"Marked that you are not interested in the latest from {sub.name}")
@@ -396,13 +410,10 @@ class SubscriptionList:
             meaning the latest videos 
             from all the channels have been watched
         """
-        for sub_json in self._subs_json["subscriptions"]:
-            # the double sub_json works because
-            # the handle is the string containing the rest of the pertinent
-            # channel info
-            sub = Sub(self._api_key, sub_json, sub_json)
-            sub.just_watched()
-            self._subs_json["subscriptions"][sub.handle] = sub.make_json()
+        for handle, sub_data in self._subs:
+            sub = Sub(handle, sub_data)
+            sub.mark_watched()
+            self._subs[sub.handle] = sub.data
 
         self.store_list()
         print("You watched all the latest videos!!")
@@ -418,9 +429,7 @@ class SubscriptionList:
         Returns:
             Sub: the subscription object with associated properties
         """
-        sub = None
-        try:
-            sub = Sub(self._api_key, handle, self._subs_json["subscriptions"][handle])
-        except KeyError:
-            print(f"Not subscribed to a channel with the handle {handle}")
-        return sub
+        if not self.is_subbed(handle):
+            return None
+
+        return Sub(handle, self._subs[handle])

@@ -14,7 +14,7 @@
 from datetime import datetime
 import pytest
 
-from ytclient import YouTubeClient, YoutubeException
+from ytclient import YouTubeClient, YouTubeException
 from api_key_utils import check_api_key
 
 # ---------- Set up stuff ----------
@@ -67,7 +67,7 @@ def test_verify_handle_fail():
     if the given handle is not linked
     to a channel
     """
-    with pytest.raises(YoutubeException) as execinfo:
+    with pytest.raises(YouTubeException) as execinfo:
         CLIENT.verify_handle("jamesrenglander")
 
     assert " is not linked to any channel" in str(execinfo)

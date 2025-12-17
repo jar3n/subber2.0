@@ -15,7 +15,6 @@ class Sub:
     """Lightweight JSON wrapper for a YouTube subscription."""
 
     _DT_FMT = "%Y-%m-%dT%H:%M:%SZ"
-
     def __init__(self, handle: str, data: Dict[str, Any]):
         self._handle = handle
         self._data = data
@@ -39,6 +38,17 @@ class Sub:
             str: the channel display name
         """
         return self._data["name"]
+
+    @property
+    def uploads_id(self) -> str:
+        """Get the id of the channels
+           uploads playlist used for 
+           getting the latest upload
+
+        Returns:
+            str: the upload alphanumeric id
+        """
+        return self._data["uploads id"]
 
     @property
     def latest_upload_time(self) -> datetime:
@@ -127,6 +137,18 @@ class Sub:
         """
         self._data["not_interested"] = True
 
+    def set_update_frequency(self, days:int):
+        """Record the amount of days to wait
+           since the last time the channel uploaded
+           before reccomending a refresh on this 
+           subscription.
+
+        Args:
+            days (int): number of days to wait before
+            checking for a new video from the channel
+        """
+        self._data.update({"upload rate":days})
+
     def apply_update(
         self,
         title: str,
@@ -147,6 +169,15 @@ class Sub:
                 "not_interested": False,
             }
         )
+
+    @property
+    def data(self):
+        """ Get all the data
+            associated with the sub
+            in a dictionary that converts
+            directly to a json object
+        """
+        return self._data
 
     # ---------- display ----------
 

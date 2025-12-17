@@ -9,7 +9,7 @@
 from datetime import datetime
 import requests
 
-class YoutubeException(Exception):
+class YouTubeException(Exception):
     """Exception Class for Errors
        with getting the data from the 
        Youtube API
@@ -105,6 +105,15 @@ class YouTubeClient:
         data = self._session.get(url, timeout=5).json()
         return data["items"][0]["contentDetails"]["duration"]
 
+    def get_channel_url(self, handle:str):
+        """Get the channel page url 
+           
+
+        Args:
+            handle (str): the handle of the channel
+        """
+        return f"http://www.youtube.com/@{handle}"
+
     def verify_handle(self, handle:str):
         """Verify the given handle
            is attached to a youtube channel
@@ -118,12 +127,12 @@ class YouTubeClient:
             the html as a string to use
             for scraping for the channel's id
         """
-        handle_url = f"http://www.youtube.com/@{handle}"
+        handle_url = self.get_channel_url(handle)
 
         response = self._session.get(handle_url, timeout=5)
 
         if response.status_code == 404:
-            raise YoutubeException(f"{handle} is not linked to any channel, check the spelling.")
+            raise YouTubeException(f"{handle} is not linked to any channel, check the spelling.")
 
         # return the html of the
         # page so it can be scraped
@@ -155,10 +164,10 @@ class YouTubeClient:
             end_of_index_of_id = start_index_of_id + response[start_index_of_id:].find('"')
             return response[start_index_of_id:end_of_index_of_id]
 
-        except YoutubeException as e:
+        except YouTubeException as e:
             raise e
         except requests.RequestException as e:
-            raise YoutubeException(e.strerror) from e
+            raise YouTubeException(e.strerror) from e
 
     def get_channel_details(self, channel_id:str) -> tuple:
         """Get the upload id assigned to the
@@ -184,7 +193,7 @@ class YouTubeClient:
                 resp_data['items'][0]['snippet']['title'],
                 resp_data['items'][0]['contentDetails']['relatedPlaylists']['uploads']
             )
-        except YoutubeException as e:
+        except YouTubeException as e:
             raise e
         except requests.RequestException as e:
-            raise YoutubeException(e.strerror) from e
+            raise YouTubeException(e.strerror) from e
