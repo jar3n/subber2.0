@@ -106,6 +106,10 @@ class YouTubeClient:
             handle (str): the youtube channel handle
             which is found on channel pages under the
             display name with an '@' in front of it
+        
+        Returns:
+            the html as a string to use
+            for scraping for the channel's id
         """
         handle_url = f"http://www.youtube.com/@{handle}"
 
@@ -151,7 +155,7 @@ class YouTubeClient:
 
     def get_channel_details(self, channel_id:str) -> tuple:
         """Get the upload id assigned to the
-           channel 
+           channel and the channel's display name
 
         Args:
             channel_id (str): the alphanumeric 

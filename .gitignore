@@ -2,3 +2,4 @@ localstuff/**
 .vscode/**
 __pycache__/**
 api_key
+pyproject.toml
