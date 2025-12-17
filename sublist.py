@@ -233,7 +233,7 @@ class SubscriptionList:
                 num_cats_with_no_vids += 1
 
         if num_cats_with_no_vids == len(list(categorized_uploads.keys())):
-            print("You have seen the all latest content from the" +
+            print("You have seen the all latest content from the " +
                     "channels you have subscribed to that could be checked.")
 
         if len(failed_sub_checks) == 0:
@@ -380,7 +380,7 @@ class SubscriptionList:
             meaning the latest videos 
             from all the channels have been watched
         """
-        for handle, sub_data in self._subs:
+        for handle, sub_data in self._subs.items():
             sub = Sub(handle, sub_data)
             sub.mark_watched()
             self._subs[sub.handle] = sub.data
