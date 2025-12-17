@@ -1,4 +1,11 @@
-# sub.py
+"""
+    This module is for a JSON wrapper class
+    called Sub which provides more readable
+    functions and properties used for accessing
+    data from a subscription in the stored 
+    json data created for tracking the youtube 
+    subscriptions.
+"""
 from datetime import datetime
 from typing import Any, Dict
 import isodate

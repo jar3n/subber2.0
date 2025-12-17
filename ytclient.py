@@ -1,4 +1,11 @@
-# youtube_client.py
+"""
+    This module holds the Youtube Client Class.
+    The class is responsible for interfacing between 
+    the local subscriptions manager and the Youtube API.
+    It is responsible for acquiring all the necessary info
+    for tracking subscriptions locally. 
+
+"""
 from datetime import datetime
 import requests
 
