@@ -210,6 +210,40 @@ class Sub:
         return self._data
 
     # ---------- display ----------
+    @property
+    def detailed_info(self) -> str:
+        """Provides a detailed 
+           list of the attributes of the 
+           sub. Used if the user wants 
+           to see how the sub is configured 
+           like its update frequency and 
+           other aspects not displayed typically
+
+        Returns:
+            str: detailed description of the sub
+        """
+        details_str = (f"{self.name}'s Detailed Information:\n"
+                       f"\tHandle: {self.handle}\n"
+                       f"\tChannel Id: {self._data['id']}\n"
+                       f"\tUploads Id: {self.uploads_id}\n"
+                       f"\tUpdate Frequency: {self.update_frequency}\n"
+                       f"\tWatched Latest: {self.watched}\n"
+                       f"\tNot Intersted in Latest: {self.not_interested}\n")
+
+        if "latest upload" not in self._data.keys():
+            return details_str
+
+        # this block is added if the sub has data on the latest
+        # video from the channel
+        duration = isodate.parse_duration(self._data['duration'])
+
+        return details_str + (
+            f"\tLatest Video Details:\n"
+            f"\t\tTitle: {self._data['latest upload']}\n"
+            f"\t\tDuration: {duration}\n"
+            f"\t\tUrl: {self._data['latest video url']}\n"
+            f"\t\tUpload Date and Time: {self.latest_upload_time}"
+        )
 
     def __str__(self) -> str:
         duration = self._data.get("duration", "Unknown")

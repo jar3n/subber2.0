@@ -104,6 +104,23 @@ def play_latest(handle:str, subs:SubscriptionList):
     else:
         raise VideoPlayerException(f"Not subscribed to the handle {handle}")
 
+def get_information_on_subs(handles:list[str], subs:SubscriptionList):
+    """List the detailed information about the given
+       list of youtube channels given by the handles
+
+    Args:
+        handles (list[str]): a list of youtube
+        channel handles to information about
+        subs (SubscriptionList): subscription list manager object
+    """
+    for handle in handles:
+        sub = subs.get_sub(handle)
+        if sub is not None:
+            print(sub.detailed_info)
+        else:
+            print(f"You are not subscribed to a channel with the handle: {handle}")
+        print("") # adds new line
+
 
 def parse_arguments(parser:argparse.ArgumentParser, subs:SubscriptionList):
     """Parse the arguments given from the command line
@@ -143,6 +160,9 @@ def parse_arguments(parser:argparse.ArgumentParser, subs:SubscriptionList):
             play_latest(args.play[0], subs)
         except VideoPlayerException as e:
             print(e.msg)
+    
+    if isinstance(args.info, list):
+        get_information_on_subs(args.info, subs)
 
 
 def main():
@@ -214,6 +234,13 @@ def main():
                         nargs=1,
                         help="play the latest video from the given channel",
                         metavar="<channel handle>")
+    
+    parser.add_argument("-i",
+                        "--info",
+                        type=str,
+                        nargs='*',
+                        help="Get the information for the given channel or channels",
+                        metavar="<channel handle(s)>")
 
     if len(sys.argv) == 1:
         parser.print_help()
