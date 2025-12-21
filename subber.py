@@ -160,7 +160,7 @@ def parse_arguments(parser:argparse.ArgumentParser, subs:SubscriptionList):
             play_latest(args.play[0], subs)
         except VideoPlayerException as e:
             print(e.msg)
-    
+
     if isinstance(args.info, list):
         get_information_on_subs(args.info, subs)
 
@@ -234,7 +234,7 @@ def main():
                         nargs=1,
                         help="play the latest video from the given channel",
                         metavar="<channel handle>")
-    
+
     parser.add_argument("-i",
                         "--info",
                         type=str,
