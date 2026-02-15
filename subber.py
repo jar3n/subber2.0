@@ -114,7 +114,7 @@ def parse_arguments(parser:argparse.ArgumentParser, subs:SubscriptionList):
 
     args = parser.parse_args()
 
-    if args.list:
+    if args.latest:
         subs.list_subs()
 
     if isinstance(args.subscribe, list):
@@ -144,6 +144,9 @@ def parse_arguments(parser:argparse.ArgumentParser, subs:SubscriptionList):
         except VideoPlayerException as e:
             print(e.msg)
 
+    if args.every_subscription:
+        subs.display_all_subs()
+
 
 def main():
     """
@@ -163,9 +166,9 @@ def main():
         description="A tool for tracking youtube subscriptions locally!")
 
     parser.add_argument('-l',
-                        '--list',
+                        '--latest',
                         action='store_true',
-                        help='List subscriptions')
+                        help='list latest video uploads from subscribed channels.')
 
     parser.add_argument('-s',
                         '--subscribe', 
@@ -214,6 +217,11 @@ def main():
                         nargs=1,
                         help="play the latest video from the given channel",
                         metavar="<channel handle>")
+
+    parser.add_argument("-e",
+                        "--every_subscription",
+                        action='store_true',
+                        help="get list of the names of currently subscribed channels.")
 
     if len(sys.argv) == 1:
         parser.print_help()
