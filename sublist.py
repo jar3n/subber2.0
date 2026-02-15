@@ -403,3 +403,18 @@ class SubscriptionList:
             return None
 
         return Sub(handle, self._subs[handle])
+
+    def display_all_subs(self):
+        """
+            Prints to terminal a list of 
+            all the channel handles and names that are currently subscribed to
+        """
+
+        if self._no_subs:
+            print("You are not subscribed to anyone.")
+            return
+
+        print("Below are the names of all the channels you are subscribed to:")
+        for sub_entry in list(self._subs.keys()):
+            sub = Sub(sub_entry, self._subs[sub_entry])
+            print(f"{sub.name} ({sub.handle})")
