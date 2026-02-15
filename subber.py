@@ -143,7 +143,7 @@ def parse_arguments(parser:argparse.ArgumentParser, subs:SubscriptionList):
             play_latest(args.play[0], subs)
         except VideoPlayerException as e:
             print(e.msg)
-    
+
     if args.every_subscription:
         subs.display_all_subs()
 
